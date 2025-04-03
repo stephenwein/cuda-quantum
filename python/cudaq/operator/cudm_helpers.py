@@ -234,10 +234,20 @@ def computeLindladOp(hilbert_space_dims: List[int], l_op: CudmOperatorTerm):
                              (term_d2, -0.5), (term_d3, -0.5))
     return lindblad
 
+def computeJumpOp(hilbert_space_dims: List[int], l_op: CudmOperatorTerm, eta=1.0 + 0.j):
+    """
+    Helper function to compute the Jump (super-)operator
+    """
+    term_d1 = l_op * l_op.dag().dual()
+    lindblad = cudm.Operator(hilbert_space_dims, (term_d1, -eta))
+    return lindblad
 
 def constructLiouvillian(hilbert_space_dims: List[int], ham: CudmOperatorTerm,
                          c_ops: List[CudmOperatorTerm],
-                         is_master_equation: bool):
+                         is_master_equation: bool,
+                         j_ops: List[CudmOperatorTerm],
+                         virtual_configuration
+                         ):
     """
     Helper to construct the Liouvillian (master or Schrodinger equations) operator
     """
@@ -252,6 +262,10 @@ def constructLiouvillian(hilbert_space_dims: List[int], ham: CudmOperatorTerm,
         for c_op in c_ops:
             lindbladian = computeLindladOp(hilbert_space_dims, c_op)
             liouvillian += lindbladian
+
+        for j_op, eta in zip(j_ops, virtual_configuration):
+            jump = computeJumpOp(hilbert_space_dims, j_op, eta)
+            liouvillian += jump
     else:
         # Schrodinger equation: `d/dt psi = -iH psi`
         liouvillian = hamiltonian

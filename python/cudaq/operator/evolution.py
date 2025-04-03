@@ -198,7 +198,10 @@ def evolve_single(
         observables: Sequence[Operator] = [],
         store_intermediate_results=False,
         integrator: Optional[BaseIntegrator] = None,
-        shots_count: Optional[int] = None) -> cudaq_runtime.EvolveResult:
+        shots_count: Optional[int] = None,
+        jump_operators: Sequence[Operator] = [],
+        virtual_configuration=[]
+) -> cudaq_runtime.EvolveResult:
     target_name = cudaq_runtime.get_target().name
     if target_name == "dynamics":
         try:
@@ -209,7 +212,8 @@ def evolve_single(
             )
         return evolve_dynamics(hamiltonian, dimensions, schedule, initial_state,
                                collapse_operators, observables,
-                               store_intermediate_results, integrator)
+                               store_intermediate_results, integrator,
+                               jump_operators, virtual_configuration)
 
     if target_name in analog_targets:
         ## TODO: Convert result from `sample_result` to `evolve_result`
@@ -316,7 +320,9 @@ def evolve(
     observables: Sequence[Operator] = [],
     store_intermediate_results=False,
     integrator: Optional[BaseIntegrator] = None,
-    shots_count: Optional[int] = None
+    shots_count: Optional[int] = None,
+    jump_operators: Sequence[Operator] = [],
+    virtual_configuration = []
 ) -> cudaq_runtime.EvolveResult | Sequence[cudaq_runtime.EvolveResult]:
     """
     Computes the time evolution of one or more initial state(s) under the defined 
@@ -406,7 +412,7 @@ def evolve(
         return evolve_single(hamiltonian, dimensions, schedule, initial_state,
                              collapse_operators, observables,
                              store_intermediate_results, integrator,
-                             shots_count)
+                             shots_count, jump_operators, virtual_configuration)
 
 
 def evolve_single_async(

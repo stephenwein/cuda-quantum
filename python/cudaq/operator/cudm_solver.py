@@ -32,7 +32,9 @@ def evolve_dynamics(
         collapse_operators: Sequence[Operator] = [],
         observables: Sequence[Operator] = [],
         store_intermediate_results=False,
-        integrator: Optional[BaseIntegrator] = None
+        integrator: Optional[BaseIntegrator] = None,
+        jump_operators: Sequence[Operator] = [],
+        virtual_configuration=[]
 ) -> cudaq_runtime.EvolveResult:
     if cudm is None:
         raise ImportError(
@@ -88,9 +90,19 @@ def evolve_dynamics(
             linblad_terms.append(
                 c_op._evaluate(CuDensityMatOpConversion(dimensions, schedule)))
 
+    jump_terms = []
+    for j_op in jump_operators:
+        with ScopeTimer("evolve.collapse_operators._evaluate") as timer:
+            jump_terms.append(
+                j_op._evaluate(CuDensityMatOpConversion(dimensions, schedule)))
+
+    if not virtual_configuration and jump_terms:
+        virtual_configuration = [1.0 + 0.j] * len(jump_terms)
+
     with ScopeTimer("evolve.constructLiouvillian") as timer:
         liouvillian = constructLiouvillian(hilbert_space_dims, ham_term,
-                                           linblad_terms, me_solve)
+                                           linblad_terms, me_solve,
+                                           jump_terms, virtual_configuration)
 
     initial_state = initial_state.get_impl()
     cudm_ctx = initial_state._ctx
